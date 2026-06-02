@@ -5,7 +5,7 @@
 - A **Production** environment in your GitHub **Environments** tab with full deployment history
 - Real-time build logs (optional)
 
-Same workflow experience as Vercel — no API keys, no third-party services. Just SSH and your Hostinger plan.
+Same workflow experience as Vercel. No API keys, no third-party services. Just SSH and your Hostinger plan.
 
 Works with Hostinger Cloud Startup, Cloud, and Business plans that support Node.js hosting with Git auto-deploy.
 
@@ -13,15 +13,15 @@ Works with Hostinger Cloud Startup, Cloud, and Business plans that support Node.
 
 - **Zero configuration.** Auto-detects your site by scanning server directories and matching git remotes. No domain or path needed.
 - **Commit status checks.** Every push creates a ✅ or ❌ on your commit with a link to the live site. Works in PRs too.
-- **Environments tab.** Each deployment appears in your GitHub repository's **Environments** page — just like Vercel. Shows deployment history, timestamps, and links to the live site. Accessible from the right sidebar of your repo.
-- **Doesn't touch your files.** The default mode (`ssh`) only reads — no `git pull`, no `npm install`, no build commands. Hostinger's built-in auto-deploy handles everything.
+- **Environments tab.** Each deployment appears in your GitHub repository's **Environments** page, just like Vercel. Shows deployment history, timestamps, and links to the live site. Accessible from the right sidebar of your repo.
+- **Doesn't touch your files.** The default mode (`ssh`) only reads. No `git pull`, no `npm install`, no build commands. Hostinger's built-in auto-deploy handles everything.
 - **Optional build output.** Set `build-command: npm run build` to see real-time build logs in your action run.
 - **SFTP fallback.** Supports file upload for shared hosting that doesn't have Git auto-deploy.
 
 ## Prerequisites
 
 1. **Hostinger plan** with Node.js support (Cloud Startup, Cloud, or Business).
-2. **Git auto-deploy** connected in hPanel for your site — Settings → Git → Connect your GitHub repository.
+2. **Git auto-deploy** connected in hPanel for your site. Go to Settings, Git, and connect your GitHub repository.
 3. **SSH Access** enabled:
    - Go to **hPanel** → **Website Dashboard** → **Advanced** → **SSH Access**
    - Click **Enable**
@@ -71,7 +71,7 @@ jobs:
 
 ### 3. Push to `main` and see the result
 
-Every push creates a deployment check on your commit — green checkmark ✅ with a link to your live site, or red cross ❌ if something went wrong.
+Every push creates a deployment check on your commit. Green checkmark ✅ with a link to your live site. Red cross ❌ if something went wrong.
 
 ## How Auto-Detection Works
 
@@ -83,7 +83,7 @@ The action connects via SSH and scans your server for the matching site:
 4. **Verifies** the `nodejs/` directory exists for that domain
 5. **Reports** success with `https://{domain}` as the live URL
 
-This works with temporary Hostinger domains, custom domains, domain changes — anything. The git remote doesn't change, so the match always succeeds.
+This works with temporary Hostinger domains, custom domains, and domain changes. The git remote doesn't change, so the match always succeeds.
 
 If auto-detection fails (e.g., Git auto-deploy is not connected), provide the `domain` or `target-dir` input explicitly.
 
@@ -100,7 +100,7 @@ If auto-detection fails (e.g., Git auto-deploy is not connected), provide the `d
 | `target-dir` | — | — | Full server path (e.g., `/home/user/domains/site.com/nodejs`). Alternative to `domain`. |
 | `live-url` | — | — | Live site URL. Auto-detected from domain if omitted. |
 | `deploy-mode` | — | `ssh` | `ssh` or `sftp`. |
-| `build-command` | — | — | Build command (e.g., `npm run build`). Empty by default — Hostinger handles the build. |
+| `build-command` | — | — | Build command (e.g., `npm run build`). Empty by default. Hostinger handles the build. |
 | `install-command` | — | — | Install command (e.g., `npm ci`). Only used if `build-command` is set. |
 | `environment` | — | `production` | GitHub deployment environment name. |
 | `clean` | — | `false` | Delete remote files before upload (sftp only). |
@@ -186,9 +186,9 @@ Action connects via SSH (password or key)
            └── Populates the Environments tab in your repo sidebar
 ```
 
-Every deployment is recorded in your repository's **Environments** page — accessible from the right sidebar. You can see at a glance when each deployment happened, what was deployed, and open the live site. This is the same experience Vercel provides.
+Every deployment is recorded in your repository's **Environments** page, accessible from the right sidebar. You can see at a glance when each deployment happened, what was deployed, and open the live site. This is the same experience Vercel provides.
 
-No API tokens, no SSH config files, no hardcoded paths. The action reads your server state — it doesn't write.
+No API tokens, no SSH config files, no hardcoded paths. The action reads your server state and never writes to it.
 
 ## Development
 
