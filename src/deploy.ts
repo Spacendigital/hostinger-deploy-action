@@ -48,9 +48,9 @@ export async function deploy(inputs: ActionInputs): Promise<DeployResult> {
     core.startGroup('🔌 Connecting via SFTP');
 
     const connectConfig: any = {
-      host: inputs.host,
+      host: inputs.host as string,
       port: 22,
-      username: inputs.username,
+      username: inputs.username as string,
       readyTimeout: 20000,
     };
 
@@ -80,9 +80,10 @@ export async function deploy(inputs: ActionInputs): Promise<DeployResult> {
     core.endGroup();
 
     core.startGroup('📁 Preparing remote directory');
-    await ensureRemoteDir(sftp, inputs.targetDir);
+    const targetDir = inputs.targetDir as string;
+    await ensureRemoteDir(sftp, targetDir);
     if (inputs.clean) {
-      await cleanRemoteDir(sftp, inputs.targetDir);
+      await cleanRemoteDir(sftp, targetDir);
     }
     core.endGroup();
 
@@ -98,7 +99,7 @@ export async function deploy(inputs: ActionInputs): Promise<DeployResult> {
       await Promise.all(
         batch.map(async (file) => {
           const relativePath = path.relative(inputs.sourceDir, file);
-          const remotePath = path.join(inputs.targetDir, relativePath).replace(/\\/g, '/');
+          const remotePath = path.join(targetDir, relativePath).replace(/\\/g, '/');
           const remoteDir = path.dirname(remotePath);
 
           await ensureRemoteDir(sftp, remoteDir);

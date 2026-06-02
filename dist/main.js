@@ -41,13 +41,13 @@ const deploy_1 = require("./deploy");
 const github_status_1 = require("./github-status");
 function getInputs() {
     return {
-        host: core.getInput('host', { required: true }),
-        username: core.getInput('username', { required: true }),
+        host: core.getInput('host'),
+        username: core.getInput('username'),
         password: core.getInput('password'),
         privateKey: core.getInput('private-key'),
-        targetDir: core.getInput('target-dir', { required: true }),
+        targetDir: core.getInput('target-dir'),
         buildCommand: core.getInput('build-command') || 'npm run build',
-        deployMode: (core.getInput('deploy-mode') || 'sftp'),
+        deployMode: (core.getInput('deploy-mode') || 'auto'),
         installCommand: core.getInput('install-command') || 'npm ci',
         clean: core.getBooleanInput('clean'),
         environment: core.getInput('environment') || 'production',
@@ -58,11 +58,14 @@ function getInputs() {
 async function run() {
     const inputs = getInputs();
     const ref = github.context.ref;
+    const sha = github.context.sha;
     core.info(`🚀 Starting Hostinger Deploy Action`);
     core.info(`  Environment: ${inputs.environment}`);
     core.info(`  Live URL: ${inputs.liveUrl}`);
     core.info(`  Deploy mode: ${inputs.deployMode}`);
-    core.info(`  Target dir: ${inputs.targetDir}`);
+    if (inputs.deployMode !== 'auto') {
+        core.info(`  Target dir: ${inputs.targetDir}`);
+    }
     let deploymentId = null;
     try {
         const deployment = await (0, github_status_1.createDeployment)(inputs.environment, ref);
@@ -72,6 +75,16 @@ async function run() {
         }
         await (0, build_1.runInstall)(inputs.installCommand);
         await (0, build_1.runBuild)(inputs.buildCommand);
+        if (inputs.deployMode === 'auto') {
+            core.info('ℹ️ Auto mode: Hostinger pulls from Git automatically. Skipping file upload.');
+            core.info('✅ Build passed. Hostinger will deploy the latest commit.');
+            core.setOutput('deploy-status', 'success');
+            core.setOutput('deploy-method', 'auto-git');
+            if (deploymentId) {
+                await (0, github_status_1.createDeploymentStatus)(deploymentId, 'success', inputs.liveUrl, `${github.context.serverUrl}/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`);
+            }
+            return;
+        }
         const result = await (0, deploy_1.deploy)(inputs);
         if (result.success) {
             core.info(`✅ Deployed ${result.fileCount} files in ${result.durationMs}ms`);

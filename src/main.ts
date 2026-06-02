@@ -7,13 +7,13 @@ import type { ActionInputs } from './types';
 
 function getInputs(): ActionInputs {
   return {
-    host: core.getInput('host', { required: true }),
-    username: core.getInput('username', { required: true }),
+    host: core.getInput('host'),
+    username: core.getInput('username'),
     password: core.getInput('password'),
     privateKey: core.getInput('private-key'),
-    targetDir: core.getInput('target-dir', { required: true }),
+    targetDir: core.getInput('target-dir'),
     buildCommand: core.getInput('build-command') || 'npm run build',
-    deployMode: (core.getInput('deploy-mode') || 'sftp') as 'sftp' | 'ftp',
+    deployMode: (core.getInput('deploy-mode') || 'auto') as 'auto' | 'sftp' | 'ftp',
     installCommand: core.getInput('install-command') || 'npm ci',
     clean: core.getBooleanInput('clean'),
     environment: core.getInput('environment') || 'production',
@@ -25,12 +25,15 @@ function getInputs(): ActionInputs {
 export async function run(): Promise<void> {
   const inputs = getInputs();
   const ref = github.context.ref;
+  const sha = github.context.sha;
 
   core.info(`🚀 Starting Hostinger Deploy Action`);
   core.info(`  Environment: ${inputs.environment}`);
   core.info(`  Live URL: ${inputs.liveUrl}`);
   core.info(`  Deploy mode: ${inputs.deployMode}`);
-  core.info(`  Target dir: ${inputs.targetDir}`);
+  if (inputs.deployMode !== 'auto') {
+    core.info(`  Target dir: ${inputs.targetDir}`);
+  }
 
   let deploymentId: number | null = null;
 
@@ -48,6 +51,23 @@ export async function run(): Promise<void> {
 
     await runInstall(inputs.installCommand);
     await runBuild(inputs.buildCommand);
+
+    if (inputs.deployMode === 'auto') {
+      core.info('ℹ️ Auto mode: Hostinger pulls from Git automatically. Skipping file upload.');
+      core.info('✅ Build passed. Hostinger will deploy the latest commit.');
+      core.setOutput('deploy-status', 'success');
+      core.setOutput('deploy-method', 'auto-git');
+
+      if (deploymentId) {
+        await createDeploymentStatus(
+          deploymentId,
+          'success',
+          inputs.liveUrl,
+          `${github.context.serverUrl}/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`
+        );
+      }
+      return;
+    }
 
     const result = await deploy(inputs);
 

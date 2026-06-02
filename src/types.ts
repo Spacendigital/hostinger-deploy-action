@@ -1,11 +1,11 @@
 export interface ActionInputs {
-  host: string;
-  username: string;
+  host?: string;
+  username?: string;
   password?: string;
   privateKey?: string;
-  targetDir: string;
+  targetDir?: string;
   buildCommand: string;
-  deployMode: 'sftp' | 'ftp';
+  deployMode: 'auto' | 'sftp' | 'ftp';
   installCommand: string;
   clean: boolean;
   environment: string;

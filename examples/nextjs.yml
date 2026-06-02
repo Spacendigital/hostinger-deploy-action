@@ -12,13 +12,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: .node-version
 
       - uses: spacendigital/hostinger-deploy-action@v1
         with:
-          host: ${{ secrets.HOSTINGER_HOST }}
-          username: ${{ secrets.HOSTINGER_USERNAME }}
-          password: ${{ secrets.HOSTINGER_PASSWORD }}
-          target-dir: ${{ secrets.HOSTINGER_TARGET_DIR }}
           live-url: https://spacend.ws
-          deploy-mode: sftp
+          # deploy-mode defaults to 'auto' — Hostinger's Git integration
+          # handles the actual deployment automatically

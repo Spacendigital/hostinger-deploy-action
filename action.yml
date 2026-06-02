@@ -1,14 +1,14 @@
 name: 'Hostinger Deploy'
-description: 'Deploy a Next.js app to Hostinger (or any SFTP-enabled host) with GitHub Deployments tracking.'
+description: 'Deploy a Next.js app to Hostinger with GitHub Deployments tracking. Supports auto (Hostinger Git auto-deploy), SFTP, and FTP modes.'
 author: 'Spacendigital'
 
 inputs:
   host:
-    description: 'Hostinger server hostname or IP address'
-    required: true
+    description: 'Hostinger server hostname or IP (required for sftp/ftp modes)'
+    required: false
   username:
-    description: 'SFTP/SSH username'
-    required: true
+    description: 'SFTP/SSH username (required for sftp/ftp modes)'
+    required: false
   password:
     description: 'SFTP/SSH password'
     required: false
@@ -16,16 +16,16 @@ inputs:
     description: 'SSH private key content (alternative to password)'
     required: false
   target-dir:
-    description: 'Directory on the server to upload to (e.g. /public_html)'
-    required: true
+    description: 'Directory on the server to upload to e.g. /public_html (required for sftp/ftp modes)'
+    required: false
   build-command:
     description: 'Build command to run (default: npm run build)'
     required: false
     default: 'npm run build'
   deploy-mode:
-    description: 'Upload mode: sftp or ftp'
+    description: 'Deploy mode: auto (Hostinger Git auto-deploy), sftp, or ftp'
     required: false
-    default: 'sftp'
+    default: 'auto'
   install-command:
     description: 'Install command (default: npm ci)'
     required: false
@@ -35,7 +35,7 @@ inputs:
     required: false
     default: 'false'
   environment:
-    description: 'GitHub deployment environment name (e.g. production, staging)'
+    description: 'GitHub deployment environment name e.g. production, staging'
     required: false
     default: 'production'
   live-url:

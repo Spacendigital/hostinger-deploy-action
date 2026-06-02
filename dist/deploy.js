@@ -109,9 +109,10 @@ async function deploy(inputs) {
         core.info('✅ Connected successfully');
         core.endGroup();
         core.startGroup('📁 Preparing remote directory');
-        await ensureRemoteDir(sftp, inputs.targetDir);
+        const targetDir = inputs.targetDir;
+        await ensureRemoteDir(sftp, targetDir);
         if (inputs.clean) {
-            await cleanRemoteDir(sftp, inputs.targetDir);
+            await cleanRemoteDir(sftp, targetDir);
         }
         core.endGroup();
         core.startGroup('📤 Uploading files');
@@ -123,7 +124,7 @@ async function deploy(inputs) {
             const batch = files.slice(i, i + batchSize);
             await Promise.all(batch.map(async (file) => {
                 const relativePath = path.relative(inputs.sourceDir, file);
-                const remotePath = path.join(inputs.targetDir, relativePath).replace(/\\/g, '/');
+                const remotePath = path.join(targetDir, relativePath).replace(/\\/g, '/');
                 const remoteDir = path.dirname(remotePath);
                 await ensureRemoteDir(sftp, remoteDir);
                 await sftp.put(file, remotePath);
