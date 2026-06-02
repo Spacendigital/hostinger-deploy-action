@@ -46,6 +46,10 @@ inputs:
   live-url:
     description: 'Live site URL. If omitted, extracts domain from target-dir path or auto-detects.'
     required: false
+  token:
+    description: 'GitHub token for deployment status. Defaults to the workflow token.'
+    required: false
+    default: ${{ github.token }}
   source-dir:
     description: 'Directory to upload (sftp only)'
     required: false
