@@ -19,6 +19,9 @@ function sshArgs(inputs: ActionInputs): string[] {
     '-o', 'StrictHostKeyChecking=no',
     '-o', 'UserKnownHostsFile=/dev/null',
     '-o', 'LogLevel=ERROR',
+    '-o', 'ConnectTimeout=15',
+    '-o', 'ServerAliveInterval=10',
+    '-o', 'ServerAliveCountMax=3',
     '-p', String(inputs.port),
   ];
 }
@@ -74,7 +77,7 @@ async function findMatchingDir(inputs: ActionInputs): Promise<{ domain: string; 
 
   for (const dir of dirs) {
     let remoteUrl = '';
-    await runRemote(inputs, `cd "${dir}" && git remote get-url origin 2>/dev/null`, {
+    await runRemote(inputs, `cd "${dir}" && timeout 10 git remote get-url origin 2>/dev/null || true`, {
       silent: true,
       stdout: (data) => { remoteUrl += data.toString(); },
     });
