@@ -26,8 +26,13 @@ inputs:
     description: 'Full project directory on the server. Alternative to domain.'
     required: false
   build-command:
-    description: 'Build command (e.g. npm run build). Empty by default — Hostinger handles the build.'
+    description: 'Build command (e.g. npm run build). Defaults to npm run build.'
     required: false
+    default: 'npm run build'
+  install-command:
+    description: 'Install command (e.g. npm ci). Defaults to npm ci.'
+    required: false
+    default: 'npm ci'
   install-command:
     description: 'Install command (e.g. npm ci). Only used if build-command is also set.'
     required: false
