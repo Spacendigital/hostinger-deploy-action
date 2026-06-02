@@ -78,53 +78,59 @@ async function runRemote(inputs, command, opts) {
     }
     throw new Error('Either password or private-key input must be provided');
 }
+async function detectTargetDir(inputs) {
+    core.startGroup('🔍 Auto-detecting project directory');
+    let result = '';
+    const cmd = `ls -d /home/${inputs.username}/domains/*/public_nodejs 2>/dev/null | head -1`;
+    await runRemote(inputs, cmd, {
+        silent: true,
+        stdout: (data) => { result += data.toString(); },
+    });
+    const dir = result.trim();
+    if (dir) {
+        core.info(`Detected: ${dir}`);
+        core.endGroup();
+        return dir;
+    }
+    core.warning('Could not auto-detect project directory. Provide target-dir input.');
+    core.endGroup();
+    throw new Error(`Could not find project directory. Expected /home/${inputs.username}/domains/*/public_nodejs`);
+}
+function extractUrlFromPath(dir) {
+    const match = dir.match(/\/domains\/([^/]+)\//);
+    if (match) {
+        return `https://${match[1]}`;
+    }
+    return null;
+}
 async function sshDeploy(inputs) {
     const startTime = Date.now();
-    let detectedUrl = '';
     try {
         if (inputs.password) {
             await ensureSshpass();
         }
-        core.startGroup('🔍 Detecting live URL');
-        try {
-            let hostname = '';
-            await runRemote(inputs, 'hostname', {
-                silent: true,
-                stdout: (data) => { hostname += data.toString(); },
-            });
-            hostname = hostname.trim().toLowerCase();
-            if (hostname && hostname.includes('.')) {
-                detectedUrl = `https://${hostname}`;
-                core.info(`Auto-detected: ${detectedUrl}`);
-            }
-            else {
-                core.info('Could not auto-detect URL (hostname has no domain)');
-            }
+        const targetDir = inputs.targetDir || await detectTargetDir(inputs);
+        const detectedUrl = inputs.liveUrl || extractUrlFromPath(targetDir) || '';
+        if (detectedUrl) {
+            core.info(`Live URL: ${detectedUrl}`);
         }
-        catch {
-            core.info('Could not auto-detect URL');
-        }
-        core.endGroup();
         const deployCmd = [
-            `cd ${inputs.targetDir}`,
+            `cd ${targetDir}`,
             'git pull',
             inputs.installCommand,
             inputs.buildCommand,
         ].join(' && ');
         core.startGroup('🚀 Deploying via SSH');
-        core.info(`Server: ${inputs.host}:${inputs.port}`);
-        core.info(`Target: ${inputs.targetDir}`);
+        core.info(`${inputs.host}:${inputs.port}`);
         core.info('');
         let deployOutput = '';
         const exitCode = await runRemote(inputs, deployCmd, {
             stdout: (data) => {
-                const str = data.toString();
-                deployOutput += str;
+                deployOutput += data.toString();
                 process.stdout.write(data);
             },
             stderr: (data) => {
-                const str = data.toString();
-                deployOutput += str;
+                deployOutput += data.toString();
                 process.stderr.write(data);
             },
         });

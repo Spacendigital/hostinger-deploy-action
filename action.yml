@@ -4,10 +4,10 @@ author: 'Spacendigital'
 
 inputs:
   host:
-    description: 'Server hostname or IP'
+    description: 'Server hostname or IP (store as secret)'
     required: true
   username:
-    description: 'SSH username'
+    description: 'SSH username (store as secret)'
     required: true
   password:
     description: 'SSH password'
@@ -16,12 +16,12 @@ inputs:
     description: 'SSH private key content (alternative to password)'
     required: false
   port:
-    description: 'SSH port'
+    description: 'SSH port (store as secret)'
     required: false
     default: '22'
   target-dir:
-    description: 'Project directory on the server (e.g. /home/u306958712/domains/ghostwhite-tarsier-766023.hostingersite.com/public_nodejs)'
-    required: true
+    description: 'Project directory on the server. Auto-detected from username if omitted.'
+    required: false
   build-command:
     description: 'Build command to run on the server'
     required: false
@@ -43,7 +43,7 @@ inputs:
     required: false
     default: 'production'
   live-url:
-    description: 'Live site URL. If omitted, tries to detect from server hostname.'
+    description: 'Live site URL. If omitted, extracts domain from target-dir path or auto-detects.'
     required: false
   source-dir:
     description: 'Directory to upload (sftp only)'
