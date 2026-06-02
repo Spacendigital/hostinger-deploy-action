@@ -37,12 +37,21 @@ exports.createDeployment = createDeployment;
 exports.createDeploymentStatus = createDeploymentStatus;
 const core = __importStar(require("@actions/core"));
 const github = __importStar(require("@actions/github"));
+function getToken() {
+    return core.getInput('token') || process.env.GITHUB_TOKEN || '';
+}
 function getOctokit() {
-    const token = process.env.GITHUB_TOKEN ?? '';
+    const token = getToken();
+    if (!token) {
+        core.warning('No GitHub token available. Skipping deployment status.');
+        return null;
+    }
     return github.getOctokit(token);
 }
 async function createDeployment(environment, ref) {
     const octokit = getOctokit();
+    if (!octokit)
+        return null;
     const { owner, repo } = github.context.repo;
     core.startGroup('📋 Creating GitHub Deployment');
     try {
@@ -72,6 +81,8 @@ async function createDeployment(environment, ref) {
 }
 async function createDeploymentStatus(deploymentId, state, liveUrl, logUrl) {
     const octokit = getOctokit();
+    if (!octokit)
+        return;
     const { owner, repo } = github.context.repo;
     core.startGroup(`🏷️ Setting deployment status to ${state}`);
     try {

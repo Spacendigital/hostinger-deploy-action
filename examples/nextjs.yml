@@ -16,6 +16,6 @@ jobs:
 
       - uses: spacendigital/hostinger-deploy-action@v1
         with:
-          live-url: https://spacend.ws
+          token: ${{ github.token }}
           # deploy-mode defaults to 'auto' — Hostinger's Git integration
           # handles the actual deployment automatically

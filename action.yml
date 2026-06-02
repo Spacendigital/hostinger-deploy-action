@@ -38,6 +38,10 @@ inputs:
     description: 'GitHub deployment environment name'
     required: false
     default: 'production'
+  token:
+    description: 'GitHub token for creating deployment statuses. Defaults to ${{ github.token }}, which is automatically available.'
+    required: false
+    default: ''
   live-url:
     description: 'URL of the live site (shown in deployment status). Optional — if omitted, no URL is shown in the Deployments tab.'
     required: false
