@@ -16,48 +16,39 @@ inputs:
     description: 'SSH private key content (alternative to password)'
     required: false
   target-dir:
-    description: 'Directory on the server to upload to e.g. /public_html (required for sftp/ftp modes)'
+    description: 'Directory on the server to upload to (required for sftp/ftp modes)'
     required: false
   build-command:
-    description: 'Build command to run (default: npm run build)'
+    description: 'Build command to run'
     required: false
     default: 'npm run build'
   deploy-mode:
-    description: 'Deploy mode: auto (Hostinger Git auto-deploy), sftp, or ftp'
+    description: 'Deploy mode: auto, sftp, or ftp'
     required: false
     default: 'auto'
   install-command:
-    description: 'Install command (default: npm ci)'
+    description: 'Install command'
     required: false
     default: 'npm ci'
   clean:
-    description: 'Delete all files in target-dir before uploading (true/false)'
+    description: 'Delete remote files before uploading (true/false)'
     required: false
     default: 'false'
   environment:
-    description: 'GitHub deployment environment name e.g. production, staging'
+    description: 'GitHub deployment environment name'
     required: false
     default: 'production'
   live-url:
     description: 'URL of the live site (shown in deployment status)'
     required: true
   source-dir:
-    description: 'Directory to upload (default: out/)'
+    description: 'Directory to upload'
     required: false
     default: 'out'
 
 runs:
-  using: 'composite'
-  steps:
-    - name: Install action dependencies
-      run: npm ci --prefix ${{ github.action_path }}
-      shell: bash
-
-    - name: Run deploy
-      run: node ${{ github.action_path }}/dist/main.js
-      shell: bash
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
+  using: 'node20'
+  main: 'dist/index.js'
 
 branding:
   icon: 'upload-cloud'

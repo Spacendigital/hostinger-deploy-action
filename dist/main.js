@@ -110,4 +110,3 @@ async function run() {
         }
     }
 }
-run();
