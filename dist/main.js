@@ -49,7 +49,7 @@ function getInputs() {
         buildCommand: core.getInput('build-command') || 'npm run build',
         deployMode: (core.getInput('deploy-mode') || 'auto'),
         installCommand: core.getInput('install-command') || 'npm ci',
-        clean: core.getBooleanInput('clean'),
+        clean: core.getInput('clean')?.toLowerCase() === 'true',
         environment: core.getInput('environment') || 'production',
         liveUrl: core.getInput('live-url', { required: true }),
         sourceDir: core.getInput('source-dir') || 'out',
