@@ -4,7 +4,7 @@ author: 'Spacendigital'
 
 inputs:
   host:
-    description: 'Hostinger server hostname or IP (required for sftp/ftp modes)'
+    description: 'Server hostname or IP (required for sftp/ftp modes)'
     required: false
   username:
     description: 'SFTP/SSH username (required for sftp/ftp modes)'
@@ -47,8 +47,17 @@ inputs:
     default: 'out'
 
 runs:
-  using: 'node20'
-  main: 'dist/main.js'
+  using: 'composite'
+  steps:
+    - name: Install action dependencies
+      run: npm ci --prefix ${{ github.action_path }}
+      shell: bash
+
+    - name: Run deploy
+      run: node ${{ github.action_path }}/dist/main.js
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
 
 branding:
   icon: 'upload-cloud'

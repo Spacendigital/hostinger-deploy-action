@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "GitHub Action to deploy Next.js apps to Hostinger via SFTP",
   "private": true,
-  "main": "dist/main.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "prebuild": "rm -rf dist"
@@ -12,12 +12,13 @@
     "@actions/core": "^1.11.1",
     "@actions/exec": "^1.1.1",
     "@actions/github": "^6.0.0",
-    "ssh2-sftp-client": "^11.0.0",
-    "fast-glob": "^3.3.3"
+    "fast-glob": "^3.3.3",
+    "ssh2-sftp-client": "^11.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/ssh2-sftp-client": "^9.0.3",
+    "@vercel/ncc": "^0.38.4",
     "typescript": "^5.7.0"
   }
 }
