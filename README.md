@@ -1,14 +1,19 @@
 # Hostinger Deploy Action
 
-**Vercel-style deployment tracking for Hostinger.** Push to GitHub, get ✅/❌ on every commit with a live URL — no build logs, no config files, no complex CI pipelines.
+**Vercel-style deployment tracking for Hostinger.** Push to GitHub, get:
+- ✅/❌ commit status checks with live site URL
+- A **Production** environment in your GitHub **Environments** tab with full deployment history
+- Real-time build logs (optional)
 
-Works with Hostinger Cloud Startup, Cloud, and Business plans that support Node.js hosting with Git auto-deploy. Uses SSH (password or key) — no API keys, no third-party services.
+Same workflow experience as Vercel — no API keys, no third-party services. Just SSH and your Hostinger plan.
+
+Works with Hostinger Cloud Startup, Cloud, and Business plans that support Node.js hosting with Git auto-deploy.
 
 ## Features
 
 - **Zero configuration.** Auto-detects your site by scanning server directories and matching git remotes. No domain or path needed.
 - **Commit status checks.** Every push creates a ✅ or ❌ on your commit with a link to the live site. Works in PRs too.
-- **Deployments tab.** All deployments tracked in GitHub's Deployments API with environment URLs.
+- **Environments tab.** Each deployment appears in your GitHub repository's **Environments** page — just like Vercel. Shows deployment history, timestamps, and links to the live site. Accessible from the right sidebar of your repo.
 - **Doesn't touch your files.** The default mode (`ssh`) only reads — no `git pull`, no `npm install`, no build commands. Hostinger's built-in auto-deploy handles everything.
 - **Optional build output.** Set `build-command: npm run build` to see real-time build logs in your action run.
 - **SFTP fallback.** Supports file upload for shared hosting that doesn't have Git auto-deploy.
@@ -177,7 +182,11 @@ Action connects via SSH (password or key)
     ├── (Optional) Runs install + build commands on the server
     │
     └── Creates ✅/❌ on commit with live URL via GitHub Deployments API
+           │
+           └── Populates the Environments tab in your repo sidebar
 ```
+
+Every deployment is recorded in your repository's **Environments** page — accessible from the right sidebar. You can see at a glance when each deployment happened, what was deployed, and open the live site. This is the same experience Vercel provides.
 
 No API tokens, no SSH config files, no hardcoded paths. The action reads your server state — it doesn't write.
 
