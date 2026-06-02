@@ -53,34 +53,24 @@ async function runRemote(
   throw new Error('Either password or private-key input must be provided');
 }
 
-async function detectTargetDir(inputs: ActionInputs): Promise<string> {
-  core.startGroup('🔍 Auto-detecting project directory');
-  let result = '';
-  const cmd =
-    `ls -d /home/${inputs.username}/domains/*/public_nodejs 2>/dev/null | head -1`;
-  await runRemote(inputs, cmd, {
-    silent: true,
-    stdout: (data) => { result += data.toString(); },
-  });
-  const dir = result.trim();
-  if (dir) {
-    core.info(`Detected: ${dir}`);
-    core.endGroup();
-    return dir;
+function resolveTargetDir(inputs: ActionInputs): string {
+  if (inputs.domain) {
+    return `/home/${inputs.username}/domains/${inputs.domain}/public_nodejs`;
   }
-  core.warning('Could not auto-detect project directory. Provide target-dir input.');
-  core.endGroup();
+  if (inputs.targetDir) {
+    return inputs.targetDir;
+  }
   throw new Error(
-    `Could not find project directory. Expected /home/${inputs.username}/domains/*/public_nodejs`
+    'Provide either `domain` (e.g. kellshot.com) or `target-dir` to specify the project location on the server'
   );
 }
 
-function extractUrlFromPath(dir: string): string | null {
-  const match = dir.match(/\/domains\/([^/]+)\//);
-  if (match) {
-    return `https://${match[1]}`;
-  }
-  return null;
+function extractUrl(inputs: ActionInputs): string | undefined {
+  if (inputs.liveUrl) return inputs.liveUrl;
+  if (inputs.domain) return `https://${inputs.domain}`;
+  const match = inputs.targetDir?.match(/\/domains\/([^/]+)\//);
+  if (match) return `https://${match[1]}`;
+  return undefined;
 }
 
 export async function sshDeploy(inputs: ActionInputs): Promise<DeployResult> {
@@ -91,8 +81,8 @@ export async function sshDeploy(inputs: ActionInputs): Promise<DeployResult> {
       await ensureSshpass();
     }
 
-    const targetDir = inputs.targetDir || await detectTargetDir(inputs);
-    const detectedUrl = inputs.liveUrl || extractUrlFromPath(targetDir) || '';
+    const targetDir = resolveTargetDir(inputs);
+    const detectedUrl = extractUrl(inputs);
 
     if (detectedUrl) {
       core.info(`Live URL: ${detectedUrl}`);

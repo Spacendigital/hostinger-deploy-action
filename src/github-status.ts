@@ -64,7 +64,7 @@ export async function createDeployment(
 export async function createDeploymentStatus(
   deploymentId: number,
   state: 'success' | 'failure' | 'pending' | 'in_progress',
-  liveUrl: string,
+  liveUrl?: string,
   logUrl?: string
 ): Promise<void> {
   const octokit = getOctokit();

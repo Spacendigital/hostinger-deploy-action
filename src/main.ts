@@ -12,7 +12,8 @@ function getInputs(): ActionInputs {
     password: core.getInput('password'),
     privateKey: core.getInput('private-key'),
     port: parseInt(core.getInput('port') || '22', 10),
-    targetDir: core.getInput('target-dir', { required: true }),
+    domain: core.getInput('domain'),
+    targetDir: core.getInput('target-dir'),
     buildCommand: core.getInput('build-command') || 'npm run build',
     deployMode: (core.getInput('deploy-mode') || 'ssh') as 'ssh' | 'sftp' | 'ftp',
     installCommand: core.getInput('install-command') || 'npm ci',
@@ -30,7 +31,6 @@ export async function run(): Promise<void> {
   core.info('🚀 Hostinger Deploy Action');
   core.info(`  Mode: ${inputs.deployMode}`);
   core.info(`  Server: ${inputs.host}:${inputs.port}`);
-  core.info(`  Target: ${inputs.targetDir}`);
 
   let deploymentId: number | null = null;
 

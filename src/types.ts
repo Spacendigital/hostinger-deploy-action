@@ -4,13 +4,14 @@ export interface ActionInputs {
   password?: string;
   privateKey?: string;
   port: number;
-  targetDir: string;
+  domain?: string;
+  targetDir?: string;
   buildCommand: string;
   deployMode: 'ssh' | 'sftp' | 'ftp';
   installCommand: string;
   clean: boolean;
   environment: string;
-  liveUrl: string;
+  liveUrl?: string;
   sourceDir: string;
 }
 

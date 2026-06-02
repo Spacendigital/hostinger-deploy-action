@@ -19,8 +19,11 @@ inputs:
     description: 'SSH port (store as secret)'
     required: false
     default: '22'
+  domain:
+    description: 'Your site domain (e.g. kellshot.com). Used to build the server path automatically. Recommended over target-dir.'
+    required: false
   target-dir:
-    description: 'Project directory on the server. Auto-detected from username if omitted.'
+    description: 'Full project directory on the server. Alternative to domain.'
     required: false
   build-command:
     description: 'Build command to run on the server'

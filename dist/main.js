@@ -46,7 +46,8 @@ function getInputs() {
         password: core.getInput('password'),
         privateKey: core.getInput('private-key'),
         port: parseInt(core.getInput('port') || '22', 10),
-        targetDir: core.getInput('target-dir', { required: true }),
+        domain: core.getInput('domain'),
+        targetDir: core.getInput('target-dir'),
         buildCommand: core.getInput('build-command') || 'npm run build',
         deployMode: (core.getInput('deploy-mode') || 'ssh'),
         installCommand: core.getInput('install-command') || 'npm ci',
@@ -62,7 +63,6 @@ async function run() {
     core.info('🚀 Hostinger Deploy Action');
     core.info(`  Mode: ${inputs.deployMode}`);
     core.info(`  Server: ${inputs.host}:${inputs.port}`);
-    core.info(`  Target: ${inputs.targetDir}`);
     let deploymentId = null;
     try {
         const deployment = await (0, github_status_1.createDeployment)(inputs.environment, ref);
