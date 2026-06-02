@@ -54,7 +54,7 @@ async function runRemote(
   throw new Error('Either password or private-key input must be provided');
 }
 
-async function findMatchingDir(inputs: ActionInputs): Promise<string | null> {
+async function findMatchingDir(inputs: ActionInputs): Promise<{ domain: string; nodejsDir: string } | null> {
   const repoFullName = `${github.context.repo.owner}/${github.context.repo.repo}`;
 
   core.startGroup('🔍 Scanning server for matching git repo');
@@ -62,7 +62,7 @@ async function findMatchingDir(inputs: ActionInputs): Promise<string | null> {
 
   let dirList = '';
   const scanCmd =
-    `for d in /home/${inputs.username}/domains/*/public_nodejs; do ` +
+    `for d in /home/${inputs.username}/domains/*/public_html/.builds/last-source; do ` +
     'if [ -d "$d/.git" ]; then echo "$d"; fi; done';
 
   await runRemote(inputs, scanCmd, {
@@ -80,9 +80,11 @@ async function findMatchingDir(inputs: ActionInputs): Promise<string | null> {
     });
 
     if (remoteUrl.trim().replace(/\.git$/, '').includes(repoFullName)) {
-      core.info(`Matched: ${dir}`);
+      const domain = dir.replace(/^\/home\/[^/]+\/domains\/([^/]+)\/.*$/, '$1');
+      const nodejsDir = `/home/${inputs.username}/domains/${domain}/nodejs`;
+      core.info(`Matched site: ${domain}`);
       core.endGroup();
-      return dir.trim();
+      return { domain, nodejsDir };
     }
   }
 
@@ -93,7 +95,7 @@ async function findMatchingDir(inputs: ActionInputs): Promise<string | null> {
 
 async function resolveTargetDir(inputs: ActionInputs): Promise<string> {
   if (inputs.domain) {
-    return `/home/${inputs.username}/domains/${inputs.domain}/public_nodejs`;
+    return `/home/${inputs.username}/domains/${inputs.domain}/nodejs`;
   }
   if (inputs.targetDir) {
     return inputs.targetDir;
@@ -101,7 +103,7 @@ async function resolveTargetDir(inputs: ActionInputs): Promise<string> {
 
   const matched = await findMatchingDir(inputs);
   if (matched) {
-    return matched;
+    return matched.nodejsDir;
   }
 
   throw new Error(

@@ -84,7 +84,7 @@ async function findMatchingDir(inputs) {
     core.startGroup('🔍 Scanning server for matching git repo');
     core.info(`Looking for: ${repoFullName}`);
     let dirList = '';
-    const scanCmd = `for d in /home/${inputs.username}/domains/*/public_nodejs; do ` +
+    const scanCmd = `for d in /home/${inputs.username}/domains/*/public_html/.builds/last-source; do ` +
         'if [ -d "$d/.git" ]; then echo "$d"; fi; done';
     await runRemote(inputs, scanCmd, {
         silent: true,
@@ -98,9 +98,11 @@ async function findMatchingDir(inputs) {
             stdout: (data) => { remoteUrl += data.toString(); },
         });
         if (remoteUrl.trim().replace(/\.git$/, '').includes(repoFullName)) {
-            core.info(`Matched: ${dir}`);
+            const domain = dir.replace(/^\/home\/[^/]+\/domains\/([^/]+)\/.*$/, '$1');
+            const nodejsDir = `/home/${inputs.username}/domains/${domain}/nodejs`;
+            core.info(`Matched site: ${domain}`);
             core.endGroup();
-            return dir.trim();
+            return { domain, nodejsDir };
         }
     }
     core.warning('No matching git repo found on the server.');
@@ -109,14 +111,14 @@ async function findMatchingDir(inputs) {
 }
 async function resolveTargetDir(inputs) {
     if (inputs.domain) {
-        return `/home/${inputs.username}/domains/${inputs.domain}/public_nodejs`;
+        return `/home/${inputs.username}/domains/${inputs.domain}/nodejs`;
     }
     if (inputs.targetDir) {
         return inputs.targetDir;
     }
     const matched = await findMatchingDir(inputs);
     if (matched) {
-        return matched;
+        return matched.nodejsDir;
     }
     throw new Error('Could not auto-detect the project directory. ' +
         'Set up Git auto-deploy in hPanel first, or provide `domain` or `target-dir` input.');
