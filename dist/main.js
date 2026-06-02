@@ -36,18 +36,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.run = run;
 const core = __importStar(require("@actions/core"));
 const github = __importStar(require("@actions/github"));
-const build_1 = require("./build");
 const deploy_1 = require("./deploy");
+const ssh_deploy_1 = require("./ssh-deploy");
 const github_status_1 = require("./github-status");
 function getInputs() {
     return {
-        host: core.getInput('host'),
-        username: core.getInput('username'),
+        host: core.getInput('host', { required: true }),
+        username: core.getInput('username', { required: true }),
         password: core.getInput('password'),
         privateKey: core.getInput('private-key'),
-        targetDir: core.getInput('target-dir'),
+        port: parseInt(core.getInput('port') || '22', 10),
+        targetDir: core.getInput('target-dir', { required: true }),
         buildCommand: core.getInput('build-command') || 'npm run build',
-        deployMode: (core.getInput('deploy-mode') || 'auto'),
+        deployMode: (core.getInput('deploy-mode') || 'ssh'),
         installCommand: core.getInput('install-command') || 'npm ci',
         clean: core.getInput('clean')?.toLowerCase() === 'true',
         environment: core.getInput('environment') || 'production',
@@ -58,14 +59,10 @@ function getInputs() {
 async function run() {
     const inputs = getInputs();
     const ref = github.context.ref;
-    const sha = github.context.sha;
-    core.info(`🚀 Starting Hostinger Deploy Action`);
-    core.info(`  Environment: ${inputs.environment}`);
-    core.info(`  Live URL: ${inputs.liveUrl}`);
-    core.info(`  Deploy mode: ${inputs.deployMode}`);
-    if (inputs.deployMode !== 'auto') {
-        core.info(`  Target dir: ${inputs.targetDir}`);
-    }
+    core.info('🚀 Hostinger Deploy Action');
+    core.info(`  Mode: ${inputs.deployMode}`);
+    core.info(`  Server: ${inputs.host}:${inputs.port}`);
+    core.info(`  Target: ${inputs.targetDir}`);
     let deploymentId = null;
     try {
         const deployment = await (0, github_status_1.createDeployment)(inputs.environment, ref);
@@ -73,40 +70,35 @@ async function run() {
         if (deploymentId) {
             await (0, github_status_1.createDeploymentStatus)(deploymentId, 'in_progress', inputs.liveUrl);
         }
-        if (inputs.deployMode === 'auto') {
-            core.info('ℹ️ Auto mode: Validating build. Hostinger will deploy from Git.');
-            core.setOutput('deploy-method', 'auto-git');
+        let result;
+        if (inputs.deployMode === 'ssh') {
+            result = await (0, ssh_deploy_1.sshDeploy)(inputs);
         }
-        await (0, build_1.runInstall)(inputs.installCommand);
-        await (0, build_1.runBuild)(inputs.buildCommand);
-        if (inputs.deployMode === 'auto') {
-            core.info('✅ Build passed. Hostinger will deploy the latest commit.');
-            core.setOutput('deploy-status', 'success');
-            if (deploymentId) {
-                await (0, github_status_1.createDeploymentStatus)(deploymentId, 'success', inputs.liveUrl, `${github.context.serverUrl}/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`);
-            }
-            return;
+        else {
+            result = await (0, deploy_1.deploy)(inputs);
         }
-        const result = await (0, deploy_1.deploy)(inputs);
+        const liveUrl = result.hostname || inputs.liveUrl;
+        const logUrl = `${github.context.serverUrl}/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
         if (result.success) {
-            core.info(`✅ Deployed ${result.fileCount} files in ${result.durationMs}ms`);
+            core.info(`✅ Deploy succeeded in ${(result.durationMs / 1000).toFixed(1)}s`);
             core.setOutput('deploy-status', 'success');
-            core.setOutput('file-count', String(result.fileCount));
-            core.setOutput('duration-ms', String(result.durationMs));
             if (deploymentId) {
-                await (0, github_status_1.createDeploymentStatus)(deploymentId, 'success', inputs.liveUrl, `${github.context.serverUrl}/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`);
+                await (0, github_status_1.createDeploymentStatus)(deploymentId, 'success', liveUrl, logUrl);
             }
         }
         else {
-            core.setFailed(`Deploy failed: ${result.error ?? 'Unknown error'}`);
+            const msg = result.error || 'Unknown error';
+            core.error(`❌ Deploy failed: ${msg}`);
+            core.setFailed(msg);
             core.setOutput('deploy-status', 'failure');
             if (deploymentId) {
-                await (0, github_status_1.createDeploymentStatus)(deploymentId, 'failure', inputs.liveUrl);
+                await (0, github_status_1.createDeploymentStatus)(deploymentId, 'failure', liveUrl);
             }
         }
     }
     catch (error) {
-        core.setFailed(`Action failed: ${error instanceof Error ? error.message : String(error)}`);
+        const msg = error instanceof Error ? error.message : String(error);
+        core.setFailed(msg);
         if (deploymentId) {
             await (0, github_status_1.createDeploymentStatus)(deploymentId, 'failure', inputs.liveUrl);
         }

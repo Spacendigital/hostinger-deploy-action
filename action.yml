@@ -1,52 +1,52 @@
 name: 'Hostinger Deploy'
-description: 'Deploy a Next.js app to Hostinger with GitHub Deployments tracking. Supports auto (Hostinger Git auto-deploy), SFTP, and FTP modes.'
+description: 'Deploy a Next.js app to Hostinger via SSH with GitHub Deployments tracking.'
 author: 'Spacendigital'
 
 inputs:
   host:
-    description: 'Server hostname or IP (required for sftp/ftp modes)'
-    required: false
+    description: 'Server hostname or IP'
+    required: true
   username:
-    description: 'SFTP/SSH username (required for sftp/ftp modes)'
-    required: false
+    description: 'SSH username'
+    required: true
   password:
-    description: 'SFTP/SSH password'
+    description: 'SSH password'
     required: false
   private-key:
     description: 'SSH private key content (alternative to password)'
     required: false
-  target-dir:
-    description: 'Directory on the server to upload to (required for sftp/ftp modes)'
+  port:
+    description: 'SSH port'
     required: false
+    default: '22'
+  target-dir:
+    description: 'Project directory on the server (e.g. /home/u306958712/domains/ghostwhite-tarsier-766023.hostingersite.com/public_nodejs)'
+    required: true
   build-command:
-    description: 'Build command to run'
+    description: 'Build command to run on the server'
     required: false
     default: 'npm run build'
-  deploy-mode:
-    description: 'Deploy mode: auto, sftp, or ftp'
-    required: false
-    default: 'auto'
   install-command:
     description: 'Install command'
     required: false
     default: 'npm ci'
+  deploy-mode:
+    description: 'ssh or sftp'
+    required: false
+    default: 'ssh'
   clean:
-    description: 'Delete remote files before uploading (true/false)'
+    description: 'Delete all files in target-dir before uploading (sftp only)'
     required: false
     default: 'false'
   environment:
     description: 'GitHub deployment environment name'
     required: false
     default: 'production'
-  token:
-    description: 'GitHub token for creating deployment statuses'
-    required: false
-    default: ${{ github.token }}
   live-url:
-    description: 'URL of the live site (shown in deployment status). Optional — if omitted, no URL is shown in the Deployments tab.'
+    description: 'Live site URL. If omitted, tries to detect from server hostname.'
     required: false
   source-dir:
-    description: 'Directory to upload'
+    description: 'Directory to upload (sftp only)'
     required: false
     default: 'out'
 

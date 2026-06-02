@@ -1,11 +1,12 @@
 export interface ActionInputs {
-  host?: string;
-  username?: string;
+  host: string;
+  username: string;
   password?: string;
   privateKey?: string;
-  targetDir?: string;
+  port: number;
+  targetDir: string;
   buildCommand: string;
-  deployMode: 'auto' | 'sftp' | 'ftp';
+  deployMode: 'ssh' | 'sftp' | 'ftp';
   installCommand: string;
   clean: boolean;
   environment: string;
@@ -18,4 +19,5 @@ export interface DeployResult {
   fileCount: number;
   durationMs: number;
   error?: string;
+  hostname?: string;
 }
