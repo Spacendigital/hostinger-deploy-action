@@ -128,40 +128,48 @@ export async function sshDeploy(inputs: ActionInputs): Promise<DeployResult> {
     const targetDir = await resolveTargetDir(inputs);
     const detectedUrl = extractUrl(targetDir, inputs);
 
+    core.info(`Target: ${targetDir}`);
     if (detectedUrl) {
       core.info(`Live URL: ${detectedUrl}`);
     }
 
-    const deploySteps = [`cd ${targetDir}`, 'git pull'];
-    if (inputs.installCommand) deploySteps.push(inputs.installCommand);
-    if (inputs.buildCommand) deploySteps.push(inputs.buildCommand);
-    const deployCmd = deploySteps.join(' && ');
+    // Run `git fetch` — downloads new commits without touching working tree.
+    // Only runs if build-command is set (user opted into local processing).
+    if (inputs.buildCommand) {
+      const deploySteps = [`cd ${targetDir}`, 'git fetch'];
+      if (inputs.installCommand) deploySteps.push(inputs.installCommand);
+      if (inputs.buildCommand) deploySteps.push(inputs.buildCommand);
+      const deployCmd = deploySteps.join(' && ');
 
-    core.startGroup('🚀 Deploying via SSH');
-    core.info(`${inputs.host}:${inputs.port}`);
-    core.info('');
+      core.startGroup('🚀 Running deploy commands');
+      core.info(`${inputs.host}:${inputs.port}`);
+      core.info('');
 
-    let deployOutput = '';
-    const exitCode = await runRemote(inputs, deployCmd, {
-      stdout: (data) => {
-        deployOutput += data.toString();
-        process.stdout.write(data);
-      },
-      stderr: (data) => {
-        deployOutput += data.toString();
-        process.stderr.write(data);
-      },
-    });
-    core.endGroup();
+      let deployOutput = '';
+      const exitCode = await runRemote(inputs, deployCmd, {
+        stdout: (data) => {
+          deployOutput += data.toString();
+          process.stdout.write(data);
+        },
+        stderr: (data) => {
+          deployOutput += data.toString();
+          process.stderr.write(data);
+        },
+      });
+      core.endGroup();
 
-    const durationMs = Date.now() - startTime;
+      const durationMs = Date.now() - startTime;
 
-    if (exitCode === 0) {
-      return { success: true, fileCount: 0, durationMs, hostname: detectedUrl || undefined };
+      if (exitCode === 0) {
+        return { success: true, fileCount: 0, durationMs, hostname: detectedUrl || undefined };
+      }
+
+      const errorHint = deployOutput.split('\n').slice(-5).join('\n');
+      return { success: false, fileCount: 0, durationMs, error: errorHint || `Exit code ${exitCode}` };
     }
 
-    const errorHint = deployOutput.split('\n').slice(-5).join('\n');
-    return { success: false, fileCount: 0, durationMs, error: errorHint || `Exit code ${exitCode}` };
+    core.info('No build-command set. Hostinger auto-deploy handles the build.');
+    return { success: true, fileCount: 0, durationMs: Date.now() - startTime, hostname: detectedUrl || undefined };
   } catch (error) {
     return {
       success: false,
