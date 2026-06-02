@@ -1,13 +1,44 @@
 # Hostinger Deploy Action
 
-A GitHub Action to deploy Next.js apps to Hostinger with Vercel-like commit status checks.
+**Vercel-style deployment tracking for Hostinger.** Push to GitHub, get ✅/❌ on every commit with a live URL — no build logs, no config files, no complex CI pipelines.
 
-Supports three modes:
-- **auto** (default) — for Hostinger Cloud Startup with Git auto-deploy. Builds on GitHub Actions, sets ✅/❌ on commits.
-- **sftp** — for shared hosting. Uploads the `out/` folder via SFTP.
-- **ftp** — for shared hosting. Uploads via FTP.
+Works with Hostinger Cloud Startup, Cloud, and Business plans that support Node.js hosting with Git auto-deploy. Uses SSH (password or key) — no API keys, no third-party services.
 
-## Usage (Cloud Startup — auto mode)
+## Features
+
+- **Zero configuration.** Auto-detects your site by scanning server directories and matching git remotes. No domain or path needed.
+- **Commit status checks.** Every push creates a ✅ or ❌ on your commit with a link to the live site. Works in PRs too.
+- **Deployments tab.** All deployments tracked in GitHub's Deployments API with environment URLs.
+- **Doesn't touch your files.** The default mode (`ssh`) only reads — no `git pull`, no `npm install`, no build commands. Hostinger's built-in auto-deploy handles everything.
+- **Optional build output.** Set `build-command: npm run build` to see real-time build logs in your action run.
+- **SFTP fallback.** Supports file upload for shared hosting that doesn't have Git auto-deploy.
+
+## Prerequisites
+
+1. **Hostinger plan** with Node.js support (Cloud Startup, Cloud, or Business).
+2. **Git auto-deploy** connected in hPanel for your site — Settings → Git → Connect your GitHub repository.
+3. **SSH Access** enabled:
+   - Go to **hPanel** → **Website Dashboard** → **Advanced** → **SSH Access**
+   - Click **Enable**
+   - Note your SSH credentials (host, username, password)
+4. **GitHub repository secrets** with your SSH credentials.
+
+## Quick Start
+
+### 1. Add secrets to your GitHub repository
+
+Go to **Settings** → **Secrets and variables** → **Actions** → add these:
+
+| Secret | Value |
+|--------|-------|
+| `HOSTINGER_HOST` | Your server IP or hostname |
+| `HOSTINGER_USERNAME` | Your SSH username |
+| `HOSTINGER_PASSWORD` | Your SSH password |
+| `HOSTINGER_PORT` | SSH port (usually `65002`) |
+
+### 2. Create a workflow file
+
+`.github/workflows/deploy.yaml`:
 
 ```yaml
 name: Deploy to Hostinger
@@ -16,22 +47,64 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+  deployments: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .node-version
       - uses: spacendigital/hostinger-deploy-action@v1
         with:
-          live-url: https://spacend.ws
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USERNAME }}
+          password: ${{ secrets.HOSTINGER_PASSWORD }}
+          port: ${{ secrets.HOSTINGER_PORT }}
 ```
 
-The Action runs the build and creates a deployment record. Hostinger's Git integration picks up the pushed commit and deploys automatically.
+### 3. Push to `main` and see the result
 
-## Usage (Shared hosting — sftp mode)
+Every push creates a deployment check on your commit — green checkmark ✅ with a link to your live site, or red cross ❌ if something went wrong.
+
+## How Auto-Detection Works
+
+The action connects via SSH and scans your server for the matching site:
+
+1. **Scans** all directories under `~/domains/*/public_html/.builds/last-source/`
+2. **Matches** each one against your current GitHub repository by checking `git remote get-url origin`
+3. **Extracts** the domain from the matched path (e.g., `ghostwhite-tarsier-766023.hostingersite.com`)
+4. **Verifies** the `nodejs/` directory exists for that domain
+5. **Reports** success with `https://{domain}` as the live URL
+
+This works with temporary Hostinger domains, custom domains, domain changes — anything. The git remote doesn't change, so the match always succeeds.
+
+If auto-detection fails (e.g., Git auto-deploy is not connected), provide the `domain` or `target-dir` input explicitly.
+
+## Inputs
+
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `host` | ✅ | — | Server hostname or IP. Store as secret. |
+| `username` | ✅ | — | SSH username. Store as secret. |
+| `password` | — | — | SSH password. Store as secret. |
+| `private-key` | — | — | SSH private key content (alternative to password). |
+| `port` | — | `22` | SSH port. Store as secret. |
+| `domain` | — | — | Your site domain (e.g., `kellshot.com`). Skips auto-detection. |
+| `target-dir` | — | — | Full server path (e.g., `/home/user/domains/site.com/nodejs`). Alternative to `domain`. |
+| `live-url` | — | — | Live site URL. Auto-detected from domain if omitted. |
+| `deploy-mode` | — | `ssh` | `ssh` or `sftp`. |
+| `build-command` | — | — | Build command (e.g., `npm run build`). Empty by default — Hostinger handles the build. |
+| `install-command` | — | — | Install command (e.g., `npm ci`). Only used if `build-command` is set. |
+| `environment` | — | `production` | GitHub deployment environment name. |
+| `clean` | — | `false` | Delete remote files before upload (sftp only). |
+| `source-dir` | — | `out` | Directory to upload (sftp only). |
+| `token` | — | `${{ github.token }}` | GitHub token for deployment status. Usually not needed. |
+
+## Advanced Usage
+
+### Explicit domain (skip auto-detection)
 
 ```yaml
 - uses: spacendigital/hostinger-deploy-action@v1
@@ -39,34 +112,74 @@ The Action runs the build and creates a deployment record. Hostinger's Git integ
     host: ${{ secrets.HOSTINGER_HOST }}
     username: ${{ secrets.HOSTINGER_USERNAME }}
     password: ${{ secrets.HOSTINGER_PASSWORD }}
-    target-dir: ${{ secrets.HOSTINGER_TARGET_DIR }}
-    live-url: https://spacend.ws
-    deploy-mode: sftp
+    port: ${{ secrets.HOSTINGER_PORT }}
+    domain: kellshot.com
 ```
 
-## Inputs
+### With build output (see logs in action run)
 
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `live-url` | ✅ | — | Live site URL |
-| `host` | sftp/ftp | — | Server hostname or IP |
-| `username` | sftp/ftp | — | SFTP/SSH username |
-| `password` | — | — | SFTP/SSH password |
-| `private-key` | — | — | SSH private key |
-| `target-dir` | sftp/ftp | — | Remote directory (e.g. `/public_html`) |
-| `build-command` | — | `npm run build` | Build command |
-| `install-command` | — | `npm ci` | Install command |
-| `deploy-mode` | — | `auto` | `auto`, `sftp`, or `ftp` |
-| `clean` | — | `false` | Delete remote files before upload |
-| `environment` | — | `production` | GitHub deployment environment |
-| `source-dir` | — | `out` | Local directory to upload |
+```yaml
+- uses: spacendigital/hostinger-deploy-action@v1
+  with:
+    host: ${{ secrets.HOSTINGER_HOST }}
+    username: ${{ secrets.HOSTINGER_USERNAME }}
+    password: ${{ secrets.HOSTINGER_PASSWORD }}
+    port: ${{ secrets.HOSTINGER_PORT }}
+    install-command: npm ci
+    build-command: npm run build
+```
 
-## How it works
+### SFTP upload (shared hosting without Git auto-deploy)
 
-1. **Install** — `npm ci` (or your install command)
-2. **Build** — `npm run build` (catches errors early)
-3. **Deploy** — either via Git auto-deploy (Hostinger handles it) or file upload (SFTP/FTP)
-4. **Status** — creates ✅/❌ on commits via GitHub Deployments API
+```yaml
+- uses: spacendigital/hostinger-deploy-action@v1
+  with:
+    host: ${{ secrets.HOSTINGER_HOST }}
+    username: ${{ secrets.HOSTINGER_USERNAME }}
+    password: ${{ secrets.HOSTINGER_PASSWORD }}
+    target-dir: /public_html
+    deploy-mode: sftp
+    build-command: npm run build
+    install-command: npm ci
+```
+
+## Security Best Practices
+
+- **Store everything in secrets.** Host, username, password, and port should all be GitHub repository secrets. Only the workflow file is public if your repo is public.
+- **Use SSH keys instead of passwords** if possible. Provide the private key content via `private-key` input (store as secret).
+- **Minimum permissions.** The workflow only needs `contents: read` and `deployments: write`.
+
+## Troubleshooting
+
+| Problem | Likely Cause | Fix |
+|---------|-------------|-----|
+| `No matching git repo found` | Git auto-deploy not connected in hPanel | Connect your repo in Hostinger → Settings → Git, or provide `domain` input |
+| `Could not auto-detect project directory` | SSH works but no matching site found | Provide `domain` input (your site's domain) |
+| SSH connection timeout | Port blocked or SSH not enabled | Enable SSH in hPanel → Advanced → SSH Access |
+| `Permission denied` | Wrong credentials | Verify host, username, password in secrets |
+| Node.js 20 deprecation warning | GitHub is phasing out Node 20 | Add `env: { FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true }` to your workflow |
+
+## How It Works
+
+```
+Push to main
+    │
+    ▼
+GitHub Actions triggers workflow
+    │
+    ▼
+Action connects via SSH (password or key)
+    │
+    ├── Scans ~/domains/*/public_html/.builds/last-source/ for matching git remote
+    │
+    ├── Detects site domain and extracts live URL
+    │
+    ├── (Optional) Runs install + build commands on the server
+    │
+    └── Creates ✅/❌ on commit with live URL via GitHub Deployments API
+```
+
+No API tokens, no SSH config files, no hardcoded paths. The action reads your server state — it doesn't write.
 
 ## Development
 
@@ -74,3 +187,7 @@ The Action runs the build and creates a deployment record. Hostinger's Git integ
 npm ci
 npm run build
 ```
+
+## License
+
+MIT
