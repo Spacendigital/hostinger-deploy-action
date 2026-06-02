@@ -39,7 +39,7 @@ inputs:
     required: false
     default: 'production'
   token:
-    description: 'GitHub token for creating deployment statuses. Defaults to ${{ github.token }}, which is automatically available.'
+    description: 'GitHub token for creating deployment statuses'
     required: false
     default: ''
   live-url:
