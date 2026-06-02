@@ -1,5 +1,6 @@
 import * as exec from '@actions/exec';
 import * as core from '@actions/core';
+import * as github from '@actions/github';
 import * as fs from 'fs';
 import type { ActionInputs, DeployResult } from './types';
 
@@ -53,22 +54,65 @@ async function runRemote(
   throw new Error('Either password or private-key input must be provided');
 }
 
-function resolveTargetDir(inputs: ActionInputs): string {
+async function findMatchingDir(inputs: ActionInputs): Promise<string | null> {
+  const repoFullName = `${github.context.repo.owner}/${github.context.repo.repo}`;
+
+  core.startGroup('🔍 Scanning server for matching git repo');
+  core.info(`Looking for: ${repoFullName}`);
+
+  let dirList = '';
+  const scanCmd =
+    `for d in /home/${inputs.username}/domains/*/public_nodejs; do ` +
+    'if [ -d "$d/.git" ]; then echo "$d"; fi; done';
+
+  await runRemote(inputs, scanCmd, {
+    silent: true,
+    stdout: (data) => { dirList += data.toString(); },
+  });
+
+  const dirs = dirList.trim().split('\n').filter(Boolean);
+
+  for (const dir of dirs) {
+    let remoteUrl = '';
+    await runRemote(inputs, `cd "${dir}" && git remote get-url origin 2>/dev/null`, {
+      silent: true,
+      stdout: (data) => { remoteUrl += data.toString(); },
+    });
+
+    if (remoteUrl.trim().replace(/\.git$/, '').includes(repoFullName)) {
+      core.info(`Matched: ${dir}`);
+      core.endGroup();
+      return dir.trim();
+    }
+  }
+
+  core.warning('No matching git repo found on the server.');
+  core.endGroup();
+  return null;
+}
+
+async function resolveTargetDir(inputs: ActionInputs): Promise<string> {
   if (inputs.domain) {
     return `/home/${inputs.username}/domains/${inputs.domain}/public_nodejs`;
   }
   if (inputs.targetDir) {
     return inputs.targetDir;
   }
+
+  const matched = await findMatchingDir(inputs);
+  if (matched) {
+    return matched;
+  }
+
   throw new Error(
-    'Provide either `domain` (e.g. kellshot.com) or `target-dir` to specify the project location on the server'
+    'Could not auto-detect the project directory. ' +
+    'Set up Git auto-deploy in hPanel first, or provide `domain` or `target-dir` input.'
   );
 }
 
-function extractUrl(inputs: ActionInputs): string | undefined {
+function extractUrl(dir: string, inputs: ActionInputs): string | undefined {
   if (inputs.liveUrl) return inputs.liveUrl;
-  if (inputs.domain) return `https://${inputs.domain}`;
-  const match = inputs.targetDir?.match(/\/domains\/([^/]+)\//);
+  const match = dir.match(/\/domains\/([^/]+)\//);
   if (match) return `https://${match[1]}`;
   return undefined;
 }
@@ -81,8 +125,8 @@ export async function sshDeploy(inputs: ActionInputs): Promise<DeployResult> {
       await ensureSshpass();
     }
 
-    const targetDir = resolveTargetDir(inputs);
-    const detectedUrl = extractUrl(inputs);
+    const targetDir = await resolveTargetDir(inputs);
+    const detectedUrl = extractUrl(targetDir, inputs);
 
     if (detectedUrl) {
       core.info(`Live URL: ${detectedUrl}`);
