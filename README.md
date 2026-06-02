@@ -79,7 +79,7 @@ The action connects via SSH and scans your server for the matching site:
 
 1. **Scans** all directories under `~/domains/*/public_html/.builds/last-source/`
 2. **Matches** each one against your current GitHub repository by checking `git remote get-url origin`
-3. **Extracts** the domain from the matched path (e.g., `ghostwhite-tarsier-766023.hostingersite.com`)
+3. **Extracts** the domain from the matched path (e.g., `your-site.hostingersite.com`)
 4. **Verifies** the `nodejs/` directory exists for that domain
 5. **Reports** success with `https://{domain}` as the live URL
 
