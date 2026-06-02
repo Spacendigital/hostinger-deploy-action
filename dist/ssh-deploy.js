@@ -135,6 +135,7 @@ async function sshDeploy(inputs) {
         if (inputs.password) {
             await ensureSshpass();
         }
+        core.info('Locating project on server...');
         const targetDir = await resolveTargetDir(inputs);
         const detectedUrl = extractUrl(targetDir, inputs);
         core.info(`Target: ${targetDir}`);
