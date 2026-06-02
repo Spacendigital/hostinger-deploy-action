@@ -1,0 +1,55 @@
+name: 'Hostinger Deploy'
+description: 'Deploy a Next.js app to Hostinger (or any SFTP-enabled host) with GitHub Deployments tracking.'
+author: 'Spacendigital'
+
+inputs:
+  host:
+    description: 'Hostinger server hostname or IP address'
+    required: true
+  username:
+    description: 'SFTP/SSH username'
+    required: true
+  password:
+    description: 'SFTP/SSH password'
+    required: false
+  private-key:
+    description: 'SSH private key content (alternative to password)'
+    required: false
+  target-dir:
+    description: 'Directory on the server to upload to (e.g. /public_html)'
+    required: true
+  build-command:
+    description: 'Build command to run (default: npm run build)'
+    required: false
+    default: 'npm run build'
+  deploy-mode:
+    description: 'Upload mode: sftp or ftp'
+    required: false
+    default: 'sftp'
+  install-command:
+    description: 'Install command (default: npm ci)'
+    required: false
+    default: 'npm ci'
+  clean:
+    description: 'Delete all files in target-dir before uploading (true/false)'
+    required: false
+    default: 'false'
+  environment:
+    description: 'GitHub deployment environment name (e.g. production, staging)'
+    required: false
+    default: 'production'
+  live-url:
+    description: 'URL of the live site (shown in deployment status)'
+    required: true
+  source-dir:
+    description: 'Directory to upload (default: out/)'
+    required: false
+    default: 'out'
+
+runs:
+  using: 'node20'
+  main: 'dist/main.js'
+
+branding:
+  icon: 'upload-cloud'
+  color: 'orange'

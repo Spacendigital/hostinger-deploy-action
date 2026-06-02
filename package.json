@@ -1,0 +1,23 @@
+{
+  "name": "hostinger-deploy-action",
+  "version": "1.0.0",
+  "description": "GitHub Action to deploy Next.js apps to Hostinger via SFTP",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "prebuild": "rm -rf dist"
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/exec": "^1.1.1",
+    "@actions/github": "^6.0.0",
+    "ssh2-sftp-client": "^11.0.0",
+    "fast-glob": "^3.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/ssh2-sftp-client": "^9.0.3",
+    "typescript": "^5.7.0"
+  }
+}
