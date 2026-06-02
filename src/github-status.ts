@@ -64,20 +64,25 @@ export async function createDeploymentStatus(
   core.startGroup(`🏷️ Setting deployment status to ${state}`);
 
   try {
-    await octokit.rest.repos.createDeploymentStatus({
+    const params: any = {
       owner,
       repo,
       deployment_id: deploymentId,
       state,
-      environment_url: liveUrl,
-      log_url: logUrl,
       description:
         state === 'success'
           ? 'Deployment successful ✅'
           : state === 'failure'
           ? 'Deployment failed ❌'
           : 'Deployment in progress...',
-    });
+    };
+    if (liveUrl) {
+      params.environment_url = liveUrl;
+    }
+    if (logUrl) {
+      params.log_url = logUrl;
+    }
+    await octokit.rest.repos.createDeploymentStatus(params);
     core.info(`Status set to ${state}`);
   } catch (error) {
     core.warning(

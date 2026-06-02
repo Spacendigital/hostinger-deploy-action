@@ -39,8 +39,8 @@ inputs:
     required: false
     default: 'production'
   live-url:
-    description: 'URL of the live site (shown in deployment status)'
-    required: true
+    description: 'URL of the live site (shown in deployment status). Optional — if omitted, no URL is shown in the Deployments tab.'
+    required: false
   source-dir:
     description: 'Directory to upload'
     required: false

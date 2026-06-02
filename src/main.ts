@@ -17,7 +17,7 @@ function getInputs(): ActionInputs {
     installCommand: core.getInput('install-command') || 'npm ci',
     clean: core.getInput('clean')?.toLowerCase() === 'true',
     environment: core.getInput('environment') || 'production',
-    liveUrl: core.getInput('live-url', { required: true }),
+    liveUrl: core.getInput('live-url'),
     sourceDir: core.getInput('source-dir') || 'out',
   };
 }
