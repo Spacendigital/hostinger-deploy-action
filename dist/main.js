@@ -73,11 +73,9 @@ async function run() {
         if (deploymentId) {
             await (0, github_status_1.createDeploymentStatus)(deploymentId, 'in_progress', inputs.liveUrl);
         }
-        await (0, build_1.runInstall)(inputs.installCommand);
-        await (0, build_1.runBuild)(inputs.buildCommand);
         if (inputs.deployMode === 'auto') {
-            core.info('ℹ️ Auto mode: Hostinger pulls from Git automatically. Skipping file upload.');
-            core.info('✅ Build passed. Hostinger will deploy the latest commit.');
+            core.info('ℹ️ Auto mode: Skipping install+build — Hostinger handles this on their server.');
+            core.info('✅ Build assumed successful. Hostinger will deploy the latest commit.');
             core.setOutput('deploy-status', 'success');
             core.setOutput('deploy-method', 'auto-git');
             if (deploymentId) {
@@ -85,6 +83,8 @@ async function run() {
             }
             return;
         }
+        await (0, build_1.runInstall)(inputs.installCommand);
+        await (0, build_1.runBuild)(inputs.buildCommand);
         const result = await (0, deploy_1.deploy)(inputs);
         if (result.success) {
             core.info(`✅ Deployed ${result.fileCount} files in ${result.durationMs}ms`);

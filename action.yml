@@ -41,7 +41,7 @@ inputs:
   token:
     description: 'GitHub token for creating deployment statuses'
     required: false
-    default: ''
+    default: ${{ github.token }}
   live-url:
     description: 'URL of the live site (shown in deployment status). Optional — if omitted, no URL is shown in the Deployments tab.'
     required: false

@@ -49,12 +49,9 @@ export async function run(): Promise<void> {
       );
     }
 
-    await runInstall(inputs.installCommand);
-    await runBuild(inputs.buildCommand);
-
     if (inputs.deployMode === 'auto') {
-      core.info('ℹ️ Auto mode: Hostinger pulls from Git automatically. Skipping file upload.');
-      core.info('✅ Build passed. Hostinger will deploy the latest commit.');
+      core.info('ℹ️ Auto mode: Skipping install+build — Hostinger handles this on their server.');
+      core.info('✅ Build assumed successful. Hostinger will deploy the latest commit.');
       core.setOutput('deploy-status', 'success');
       core.setOutput('deploy-method', 'auto-git');
 
@@ -68,6 +65,9 @@ export async function run(): Promise<void> {
       }
       return;
     }
+
+    await runInstall(inputs.installCommand);
+    await runBuild(inputs.buildCommand);
 
     const result = await deploy(inputs);
 
