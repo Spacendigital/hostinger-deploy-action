@@ -140,12 +140,12 @@ async function sshDeploy(inputs) {
         if (detectedUrl) {
             core.info(`Live URL: ${detectedUrl}`);
         }
-        const deployCmd = [
-            `cd ${targetDir}`,
-            'git pull',
-            inputs.installCommand,
-            inputs.buildCommand,
-        ].join(' && ');
+        const deploySteps = [`cd ${targetDir}`, 'git pull'];
+        if (inputs.installCommand)
+            deploySteps.push(inputs.installCommand);
+        if (inputs.buildCommand)
+            deploySteps.push(inputs.buildCommand);
+        const deployCmd = deploySteps.join(' && ');
         core.startGroup('🚀 Deploying via SSH');
         core.info(`${inputs.host}:${inputs.port}`);
         core.info('');
