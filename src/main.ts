@@ -50,10 +50,16 @@ export async function run(): Promise<void> {
     }
 
     if (inputs.deployMode === 'auto') {
-      core.info('ℹ️ Auto mode: Skipping install+build — Hostinger handles this on their server.');
-      core.info('✅ Build assumed successful. Hostinger will deploy the latest commit.');
-      core.setOutput('deploy-status', 'success');
+      core.info('ℹ️ Auto mode: Validating build. Hostinger will deploy from Git.');
       core.setOutput('deploy-method', 'auto-git');
+    }
+
+    await runInstall(inputs.installCommand);
+    await runBuild(inputs.buildCommand);
+
+    if (inputs.deployMode === 'auto') {
+      core.info('✅ Build passed. Hostinger will deploy the latest commit.');
+      core.setOutput('deploy-status', 'success');
 
       if (deploymentId) {
         await createDeploymentStatus(
@@ -65,9 +71,6 @@ export async function run(): Promise<void> {
       }
       return;
     }
-
-    await runInstall(inputs.installCommand);
-    await runBuild(inputs.buildCommand);
 
     const result = await deploy(inputs);
 

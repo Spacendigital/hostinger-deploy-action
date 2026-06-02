@@ -74,17 +74,19 @@ async function run() {
             await (0, github_status_1.createDeploymentStatus)(deploymentId, 'in_progress', inputs.liveUrl);
         }
         if (inputs.deployMode === 'auto') {
-            core.info('ℹ️ Auto mode: Skipping install+build — Hostinger handles this on their server.');
-            core.info('✅ Build assumed successful. Hostinger will deploy the latest commit.');
-            core.setOutput('deploy-status', 'success');
+            core.info('ℹ️ Auto mode: Validating build. Hostinger will deploy from Git.');
             core.setOutput('deploy-method', 'auto-git');
+        }
+        await (0, build_1.runInstall)(inputs.installCommand);
+        await (0, build_1.runBuild)(inputs.buildCommand);
+        if (inputs.deployMode === 'auto') {
+            core.info('✅ Build passed. Hostinger will deploy the latest commit.');
+            core.setOutput('deploy-status', 'success');
             if (deploymentId) {
                 await (0, github_status_1.createDeploymentStatus)(deploymentId, 'success', inputs.liveUrl, `${github.context.serverUrl}/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`);
             }
             return;
         }
-        await (0, build_1.runInstall)(inputs.installCommand);
-        await (0, build_1.runBuild)(inputs.buildCommand);
         const result = await (0, deploy_1.deploy)(inputs);
         if (result.success) {
             core.info(`✅ Deployed ${result.fileCount} files in ${result.durationMs}ms`);
