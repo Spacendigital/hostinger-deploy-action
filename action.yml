@@ -20,7 +20,7 @@ inputs:
     required: false
     default: '22'
   domain:
-    description: 'Your site domain (e.g. kellshot.com). Used to build the server path automatically. Recommended over target-dir.'
+    description: 'Your site domain. Used to build the server path automatically. Recommended over target-dir.'
     required: false
   target-dir:
     description: 'Full project directory on the server. Alternative to domain.'
@@ -33,9 +33,6 @@ inputs:
     description: 'Install command (e.g. npm ci). Defaults to npm ci.'
     required: false
     default: 'npm ci'
-  install-command:
-    description: 'Install command (e.g. npm ci). Only used if build-command is also set.'
-    required: false
   deploy-mode:
     description: 'ssh or sftp'
     required: false

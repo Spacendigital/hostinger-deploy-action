@@ -1,35 +1,45 @@
 ## Architecture
 
-This is a JavaScript GitHub Action (`action.yml` → `runs.using: 'node20'` → `main: 'dist/index.js'`). The entry point `dist/index.js` is a bootstrap that installs runtime deps via `npm ci --production` if `node_modules` is missing, then loads `dist/main.js` which runs the deploy logic.
+JavaScript GitHub Action (`action.yml` → `runs.using: 'node20'` → `main: 'dist/index.js'`).
 
-Three deploy modes controlled by `deploy-mode` input:
-- `auto` (default) — build-only mode. Assumes Hostinger's Git integration auto-deploys. Just runs install + build + sets GitHub deployment status.
-- `sftp` — uploads `source-dir` (default `out/`) via `ssh2-sftp-client`.
-- `ftp` — reserved, not yet implemented.
+Bootstrap (`src/index.ts`) runs `npm ci --production` at runtime if `node_modules/` is missing, then loads `dist/main.js`. This means `node_modules/` must NOT be committed, but `package.json` + `package-lock.json` must be.
+
+Two deploy modes (`deploy-mode` input):
+- `ssh` (default) — SSHes in via `sshpass`, runs `git pull && npm ci && npm run build`, reports via GitHub Deployments API
+- `sftp` — uploads `source-dir` (default `out/`) via `ssh2-sftp-client`
 
 ## Build & Publish
 
 - `npm run build` runs `tsc` only (no bundler). `src/` → `dist/`.
+- `prebuild` script removes `dist/` first.
 - `dist/` is tracked in git — it is what the runner executes.
-- Tagging: `git tag -f v1 && git push -f origin v1`. The `v1` tag is force-moved to point at latest main. No GitHub Releases used.
-- Prebuild script removes `dist/` before compile.
-
-## Non-obvious gotchas
-
-- **Deps install at runtime.** `src/index.ts` (bootstrap) runs `npm ci --production` in the action checkout dir before loading the main script. This means `node_modules/` must NOT be committed, but `package.json` and `package-lock.json` must be.
-- **Native modules.** `ssh2-sftp-client` depends on `ssh2` which has native C++ addons. They are compiled for Linux on the runner during the bootstrap `npm ci`. This adds ~25s to each workflow run.
-- **Inputs work via `INPUT_*` env vars.** `@actions/core` reads from `process.env['INPUT_LIVE-URL']`. This only works correctly with `runs.using: 'node20'` — composite actions break hyphenated input names.
-- **`live-url` is optional.** When omitted, `environment_url` is not sent to the Deployments API. No link shown in the Deployments tab.
-- **`clean` is parsed manually** (`core.getInput('clean')?.toLowerCase() === 'true'`). `getBooleanInput` is not used because it rejects empty defaults in composite action contexts.
+- Tagging: `git tag -f v1 && git push -f origin v1`. The `v1` tag is a moving branch-tag on latest main. No GitHub Releases.
 
 ## CI
 
-`.github/workflows/test.yml` runs on push/PR to main: `npm ci` → `npm run build` → checks `dist/main.js` exists. No lint step, no typecheck step in CI (though tsc enforces types at build time).
+`.github/workflows/test.yml`: `npm ci` → `npm run build` → checks `dist/main.js` exists. No lint or typecheck step, but `tsc` enforces types at build time.
 
-## Evolution
+## Hostinger server layout
 
-The build plans in AGENTS.md should be reconciled by looking at `action.yml` inputs and `src/` modules. The current file has stale phase checklists. Replace them with whatever the actual next priorities are.
+```
+~/domains/{domain}/
+  public_html/.builds/last-source/  ← git repo (has remote origin)
+  nodejs/                            ← deployed app (package.json, .next/, server.js)
+```
 
-## Versioning convention
+Auto-detection (`findMatchingDir` in `ssh-deploy.ts`): scans `*/public_html/.builds/last-source` for `.git`, checks `git remote get-url origin` against `owner/repo`, extracts domain from path.
 
-Consumers reference the action as `spacendigital/hostinger-deploy-action@v1`. The `v1` tag is a moving branch-tag pointing at latest main. Breaking changes would warrant a `v2` tag.
+## Non-obvious gotchas
+
+- **Deps install at runtime.** Each workflow run compiles native `ssh2` C++ addons on the runner. Adds ~20s to every run.
+- **Inputs via `INPUT_*` env vars.** `@actions/core` reads `process.env['INPUT_LIVE-URL']`. Only works with `runs.using: 'node20'` — composite actions break hyphenated names.
+- **`token` default is `${{ github.token }}`.** Must resolve for Deployments API calls. Without it, action silently skips deployment status with a warning.
+- **`clean` is parsed manually** (`core.getInput('clean')?.toLowerCase() === 'true'`). `getBooleanInput` rejects empty defaults.
+- **`domain` input preferred over `target-dir`.** Constructs `/home/{user}/domains/{domain}/nodejs` automatically.
+- **SSH timeouts configured in `sshArgs()`:** `ConnectTimeout=15, ServerAliveInterval=10, ServerAliveCountMax=3`. Git remote lookup wrapped in `timeout 10`.
+- **`sshpass` installed at runtime** via `apt-get` if password auth is used. Only on first `ensureSshpass()` call per runner.
+- **`findMatchingDir` uses glob scan** over all `*/public_html/.builds/last-source` dirs. If the scan hangs, SSH connection is likely the issue (not the command itself).
+
+## Stale context
+
+The old `auto` and `ftp` deploy modes were removed. `build-command` and `install-command` now default to `npm run build` and `npm ci` (always runs on server). The action does NOT poll for Hostinger's own build completion — it runs its own build and reports that result.
